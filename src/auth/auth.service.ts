@@ -21,8 +21,14 @@ export class AuthService {
         }
 
 
-        //validacao de senha
-        const token = this.jwtService.sign({indexOf: user.id, role: user.role});
+           //validacao de senha
+        const passwordValid = await bcrypt.compare(password, user.password);
+    if (!passwordValid) {
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    const payload = { id: user.id, role: user.role };
+    const token = this.jwtService.sign(payload);
         return {
             access_token: token
         };

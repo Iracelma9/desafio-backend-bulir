@@ -1,4 +1,4 @@
-import { Injectable, BadGatewayException } from '@nestjs/common';
+import { Injectable, BadGatewayException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -37,4 +37,29 @@ export class UsersService {
 
   });
 }
+
+async deposit(userId: string, amount: number) {
+  if (amount <= 0) {
+    throw new BadRequestException('O valor do depósito deve ser maior que zero.');
+  }
+
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: { balance: { increment: amount } }, // ✅ Aumenta o saldo do cliente
+  });
+}
+
+async findAll() {
+  return this.prisma.user.findMany({
+    select: { id: true, name: true, email: true, role: true, balance: true },
+  });
+}
+
+async findOne(userId: string) {
+  return this.prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, role: true, balance: true },
+  });
+}
+
 }

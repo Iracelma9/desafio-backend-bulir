@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  meu-mysql:
+    image: mysql:8.2
+    container_name: meu-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: bulir_db
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+
+  meu-app:
+    build: .
+    container_name: meu-app
+    depends_on:
+      - meu-mysql
+    environment:
+      DATABASE_URL: "mysql://root:root@meu-mysql:3306/bulir_db"
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

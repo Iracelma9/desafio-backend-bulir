@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException,BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 
@@ -9,26 +9,26 @@ export class ReservationsService {
   async create(createReservationDto: CreateReservationDto, clientId: string) {
     const { serviceId } = createReservationDto;
 
-    // Verifica se o serviço existe
+    // Verificacao do service  
     const service = await this.prisma.service.findUnique({ where: { id: serviceId } });
 
     if (!service) {
       throw new BadRequestException('Serviço não encontrado');
     }
 
-    // Verifica se o usuário é um CLIENT
+    // Verificacao de role(cliente ou provedor)
     const client = await this.prisma.user.findUnique({ where: { id: clientId } });
 
     if (!client || client.role !== 'CLIENT') {
       throw new ForbiddenException('Somente clientes podem reservar serviços');
     }
 
-    // Verifica se o cliente tem saldo suficiente
+    // Verificacao de saldo 
     if (client.balance < service.price) {
       throw new BadRequestException('Saldo insuficiente para reservar este serviço');
     }
 
-    // Atualiza o saldo do cliente e do prestador
+    // Atualizacao do saldo 
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: clientId },
@@ -57,4 +57,38 @@ export class ReservationsService {
       },
     });
   }
+
+//  Cancelar reserva
+async cancelReservation(reservationId: string, clientId: string) {
+  const reservation = await this.prisma.reservation.findUnique({
+    where: { id: reservationId },
+    include: { service: true },
+  });
+
+  if (!reservation) {
+    throw new NotFoundException('Reserva não encontrada.');
+  }
+
+  if (reservation.clientId !== clientId) {
+    throw new ForbiddenException('Você só pode cancelar suas próprias reservas.');
+  }
+
+  // Transação para reembolsar o cliente e descontar do prestador
+  await this.prisma.$transaction([
+    this.prisma.user.update({
+      where: { id: clientId },
+      data: { balance: { increment: reservation.service.price } },
+    }),
+    this.prisma.user.update({
+      where: { id: reservation.service.providerId },
+      data: { balance: { decrement: reservation.service.price } },
+    }),
+    this.prisma.reservation.delete({
+      where: { id: reservationId },
+    }),
+  ]);
+
+  return { message: 'Reserva cancelada e saldo reembolsado.' };
+}
+
 }

@@ -11,7 +11,7 @@ export class UsersService {
         const {email, password, nif,role} = createUserDto;
 
 
-        //verificação do email, password, e nif
+        //verificação do email e nif
         const userExists = await this.prisma.user.findFirst({
             where: {OR: [{email},{nif}],
         },
@@ -22,7 +22,7 @@ export class UsersService {
             throw new BadGatewayException('E-mail ou NIF já cadastrados')
         }
 
- // Criar o usuário no banco de dados
+ // Criar o usuário 
  const hashedPassword = await bcrypt.hash(password, 10);
 
  return this.prisma.user.create({
@@ -45,7 +45,7 @@ async deposit(userId: string, amount: number) {
 
   return this.prisma.user.update({
     where: { id: userId },
-    data: { balance: { increment: amount } }, // ✅ Aumenta o saldo do cliente
+    data: { balance: { increment: amount } }, 
   });
 }
 

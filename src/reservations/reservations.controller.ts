@@ -21,6 +21,14 @@ export class ReservationsController {
   async findAll() {
     return this.reservationsService.findAll();
   }
+
+  @UseGuards(JwtAuthGuard)
+@Get('my-reservations')
+async getUserReservations(@Req() req: Request) {
+  const userId = req.user?.['id'];
+  return this.reservationsService.findUserReservations(userId);
+}
+
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async cancel(@Param('id') id: string, @Req() req: Request) {

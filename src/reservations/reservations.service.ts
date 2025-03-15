@@ -48,7 +48,7 @@ export class ReservationsService {
 
     return { message: 'Reserva criada com sucesso!' };
   }
-
+   //historico de reservas gerais
   async findAll() {
     return this.prisma.reservation.findMany({
       include: {
@@ -57,6 +57,19 @@ export class ReservationsService {
       },
     });
   }
+
+  //Histórico de reserva pessoal
+  async findUserReservations(userId: string) {
+    return this.prisma.reservation.findMany({
+      where: { clientId: userId }, 
+      include: {
+        service: {
+          select: { name: true, price: true, provider: { select: { name: true, email: true } } },
+        },
+      },
+    });
+  }
+  
 
 //  Cancelar reserva
 async cancelReservation(reservationId: string, clientId: string) {
